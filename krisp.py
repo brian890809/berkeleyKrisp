@@ -282,7 +282,7 @@ for t in np.geomspace(1,1e8, num=9): #over the transient, loop over time increme
     if t=='SS': # this whole section is for normal operation (steady-state) only.
 
         #4a System-level scaling of Ri#, Fr#, Eu#, reference velocity. Here we establish the facility-wide length and area scaling to match these important phenomena.
-
+        length_p = 7.0 #length of vessel used in Ri# scaling
         length_r = 0.470 #this is the length scale for all components.
         #area_r = 1/11.787 #this is driven by downcomer flow area.
         #area_r = 1/8.89 #this is if DC OD=8.858in
@@ -754,9 +754,9 @@ for t in np.geomspace(1,1e8, num=9): #over the transient, loop over time increme
     therm_diff_rf_m = therm_diff_rf_p*therm_diff_rf_r
     therm_diff_bl_m = therm_diff_bl_p*therm_diff_bl_r
 
-    var_out.loc['t='+t,'therm_diff_rx_m'] = therm_diff_rx_m # model core thermal diffusivity requirement (not used)
-    var_out.loc['t='+t,'therm_diff_rv_m'] = therm_diff_rv_m # model vessel thermal diffusivity requirement
-    var_out.loc['t='+t,'therm_diff_bl_m'] = therm_diff_bl_m # model barrel thermal diffusivity requirement
+    var_out.loc['t='+t,'thermal_diff_rx_m'] = therm_diff_rx_m # model core thermal diffusivity requirement (not used)
+    var_out.loc['t='+t,'thermal_diff_rv_m'] = therm_diff_rv_m # model vessel thermal diffusivity requirement
+    var_out.loc['t='+t,'thermal_diff_bl_m'] = therm_diff_bl_m # model barrel thermal diffusivity requirement
 
     # if the real and outputted thermal diffusivity above do not match, may want to adjust material selection or solid thickness to improve this.
     thermal_diff_bl_m_real = ks_bl_m/(rho_bl_m*cp_bl_m) #actual model thermal diffusivity based on df. selection
