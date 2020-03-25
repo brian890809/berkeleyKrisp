@@ -1,2 +1,2 @@
 # krisp
-reactor integral scaling program
+kairos reactor integral scaling program
