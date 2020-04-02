@@ -35,13 +35,13 @@ for i in range(1,numColumns_dist_out):  #fill the table with '-' (make distincti
     for j in range(1,numRows_dist_out):
         dist_out.iloc[j,i] = '-'
 
-var_out = pd.DataFrame(0, index=range(125), columns=range(35)) #create dataframe output variables
-var_out.columns = ['title column', 'time', 'qsource_m','ehAs_rx_m','ehAs_hx_m','h_FC_hx_m','ks_hx_m','ls_hx_m','u_ref_NC_m','thermal_diff_rx_m', \
-'thermal_diff_rv_m','G_m','ks_rx_m','deltaT_m','T_h_m','T_c_m','deltaT_sf_m','u_ref_FC_m',\
-'F_FC_m','ehAs_dc_m','h_NC_rx_m','ls_rx_m','h_NC_dc_m','ks_dc_m','ls_rv_m','sumLA_m','ls_rf_m',\
-'h_NC_rf_m','ks_rf_m','q_RVACS_m','f_m','ls_bl_m','h_NC_bl_m','ks_bl_m','thermal_diff_bl_m']
+var_out = pd.DataFrame(0, index=range(125), columns=range(31)) #create dataframe output variables
+var_out.columns = ['title column', 'time', 'qsource_m','q_RVACS_m','deltaT_m','T_h_m','T_c_m','deltaT_sf_m','u_ref_m', \
+'thermal_diff_rv_m','thermal_diff_bl_m','thermal_diff_rx_m','F_m','f_m','ks_rx_m','ks_rv_m','ks_bl_m','ks_rf_m',\
+'ehAs_dc_m','ehAs_rx_m','ehAs_hx_m','h_NC_rx_m','h_NC_dc_m','h_NC_rf_m','h_NC_bl_m','ls_rx_m','ls_rv_m','ls_rf_m','ls_bl_m'\
+, 'EC_rx_hx_r', 'EC_rx_dc_r']
 
-for i in range(0,35): #columns
+for i in range(0,31): #columns
     for j in range(0,125): #rows
         if var_out.iloc[j,i] == 0:
             var_out.iloc[j,i] = '-'
@@ -111,9 +111,12 @@ for i in range(1,11): #columns
     for j in range(15,51): #rows
         df.iloc[j,i] = float(df.iloc[j,i])
 
- #convert all the variable tablulated values to floats instead of strings.
-for i in range(0,33): #columns
+#convert all the  tablulated values in the input card to floats instead of the default strings.
+for i in range(0,34): #columns
     for j in range(1,10): #rows
+        df.iloc[j,i] = float(df.iloc[j,i])
+for i in range(0,1): #columns
+    for j in range(53,numRows_df): #rows
         df.iloc[j,i] = float(df.iloc[j,i])
 
 # NAMING CONVENTION
@@ -170,30 +173,9 @@ for t in np.geomspace(1,1e8, num=9): #over the transient, loop over time increme
     Pr_r = 1.0 #forcing this to match
     Pr_m = Pr_p*Pr_r
 
-    if t == 'SS':
-        pass
-    else:
-        t = int(t)  #convert back to integer instead of string for this part.
-
-    # for each time t, we have a Pr_m from above. I used table in 'Salt and simulant fluids thermophysical properties.excel' to identify T_mean that corresponds to this Pr#
-    if t==0:
-        T_m = 345.5 #in K
-    if t==1:
-        T_m = 345.5
-    if t==10:
-        T_m = 346.0
-    if t==100:
-        T_m = 344.0
-    if t==1000:
-        T_m = 355.0
-    if t==10000:
-        T_m = 375.0
-    if t==100000:
-        T_m = 423.0
-    if t==600000:
-        T_m = 360.5
-    if t=='SS':
-        T_m = 345.5
+    # for each time t, we have a Pr_m requirement from above. I used table in 'Salt and simulant fluids thermophysical properties.excel' to select a T_mean such that Pr# = 1.
+    # see page 38 of scaling report.
+    T_m = df.loc[t,'33'] #in K
 
     t = str(t) #need it to be a string again for using PANDAS dataframe functions like df.loc.
 
@@ -204,31 +186,31 @@ for t in np.geomspace(1,1e8, num=9): #over the transient, loop over time increme
     ks_rx_r = ks_rx_m/ks_rx_p
     rho_rx_p = df.loc[t,'15'] #material properties of fuel pebble
     cp_rx_p = df.loc[t,'16'] #material properties of fuel pebble
-    ls_rx_p = 0.04 #pebble diameter
-    g = 9.80665 #[m/s2] acceleration of gravity at earth's surface.
+    ls_rx_p = df.loc['ls_rx_p','0'] #pebble diameter
+    g = df.loc['g','0'] #[m/s2] acceleration of gravity at earth's surface.
     qsource_p = df.loc[t,'30'] #[W] follows decay heat curve.
     deltaT_sf_p = df.loc[t,'10']
     deltaP_p = df.loc[t,'13']
     u_ref_FC_p = df.loc['SS','11'] # [m/s] reference velocity for FC from KP-SAM
     u_ref_NC_p = df.loc[t,'11'] # reference velocity for NC from KP-SAM
     u_ref_FC_hx_p = df.loc[t,'31'] #from KP-SAM data
-    u_ref_FC_hx_m = 0.18825 #balance mass flow rate in model
+    u_ref_FC_hx_m = df.loc['u_ref_FC_hx_m','0'] #balance mass flow rate in model
     u_ref_FC_hx_r = u_ref_FC_hx_m/u_ref_FC_hx_p
 
-    por_p = 1 #not needed for now
-    ks_rf_p = 82.79 #reflector thermal conductivity, ETU-10. Need to add temp dependence when it becomes known.
-    ks_rf_m = 1.0 #can input this once it is known based on material selection.
+    por_p = df.loc['por_p','0'] #not needed for now
+    ks_rf_p = df.loc['ks_rf_p','0'] #reflector thermal conductivity, ETU-10. Need to add temp dependence when it becomes known.
+    ks_rf_m = df.loc['ks_rf_m','0'] #can input this once it is known based on material selection.
     ks_rf_r = ks_rf_m/ks_rf_p
     ls_rf_p = df.loc['Outer_Reflector_Active','6'] #width of reflector next to active core.
     ls_bl_p = df.loc['Barrel_Middle','6'] #width of core barrel.
-    h_rf_p = 1.0 #need convection from flibe to reflector from KP-SAM
+    h_rf_p = df.loc['h_rf_p','0'] #need convection from flibe to reflector from KP-SAM
     ks_rv_p = df.loc[t,'22'] #vessel SS316 is the solid used
     #ks_rv_m = 1.4
-    ks_rv_m = 1.289 #W/mK,Pyrex @ 126C. Value from 'Thermal conductivity of pyrex glass: selected values', Carwile 1966.
-    ks_bl_m = 16.2 #W/mK,Pyrex is assumed.
+    ks_rv_m = df.loc['ks_rv_m','0'] #W/mK,Pyrex @ 126C. Value from 'Thermal conductivity of pyrex glass: selected values', Carwile 1966.
+    ks_bl_m = df.loc['ks_bl_m','0'] #W/mK,Pyrex is assumed.
     #ks_rv_m = 16.2 #W/mK,when SS is assumed.
-    rho_rx_m = 5000 #will come from material selection process
-    cp_rx_m = 292 #will come from material selection process
+    rho_rx_m = df.loc['rho_rx_m','0'] #will come from material selection process
+    cp_rx_m = df.loc['cp_rx_m','0'] #will come from material selection process
 
     ks_rv_r = ks_rv_m/ks_rv_p #assume we can match this.
 
@@ -275,30 +257,31 @@ for t in np.geomspace(1,1e8, num=9): #over the transient, loop over time increme
     var_out.loc['t='+t,'deltaT_sf_m'] = deltaT_sf_m
 
     #3  // pebble length scaling can be done independently from facility-wide length scaling. But this is not used for ITF-0, which has no physical pebbles
-    l_peb_p = 1 # Pebble diameter.
-    l_peb_r = 0.47  # currently the same as the height ratio, although this can change to change Re# in pebble bed.
+    l_peb_p = df.loc['l_peb_p','0'] # Pebble diameter.
+    l_peb_r = df.loc['l_peb_r','0']  # currently the same as the height ratio, although this can change to change Re# in pebble bed.
     l_peb_m = l_peb_p*l_peb_r
 
     if t=='SS': # this whole section is for normal operation (steady-state) only.
 
         #4a System-level scaling of Ri#, Fr#, Eu#, reference velocity. Here we establish the facility-wide length and area scaling to match these important phenomena.
-        length_p = 7.0 #length of vessel used in Ri# scaling
-        length_r = 0.470 #this is the length scale for all components.
+        length_p = df.loc['length_p','0'] #length of vessel
+        length_r = df.loc['length_r','0'] #this is the length scale for all components, free to choose.
         #area_r = 1/11.787 #this is driven by downcomer flow area.
         #area_r = 1/8.89 #this is if DC OD=8.858in
-        area_r = 1/35.9 #this is if DC OD=4.72in
+        area_r = df.loc['area_r','0'] #this is 1/35.9, from DC OD=4.72in
+        core_scaling_factor = df.loc['core_scaling_factor','0'] #0.4*0.9. The 0.4 comes from the porosity, accounts for the lack of pebbles in the model. 0.9 accounts for smaller volumes of upper and lower core sections, given model is one long pipe.
         A_ref_r = ((length_r)**2)*(area_r) # the ((0.47)**2) comes from 1/2 length for geometric scaling, and area_r for further direct area scaling.
         #print('Check 2 Passed')
         A_ref_p = df.loc['Core_Active_Section','2']
         A_ref_m = A_ref_p*A_ref_r
-        n_r = 1 #from scaling report, number of parallel flow channels. may have to update this.
+        n_r = df.loc['n_r','0'] #from scaling report, number of parallel flow channels. may have to update this.
 
         Ri_FC_p = g*beta_p*(deltaT_p)*length_p/(u_ref_FC_p**2)
-        Ri_FC_r = 1
+        Ri_FC_r = 1 #assume we can match
         Ri_FC_m = Ri_FC_p*Ri_FC_r
         u_ref_FC_r = (length_r)**.5
         u_ref_FC_m = u_ref_FC_p*u_ref_FC_r
-        Fr_FC_r = 1 #matched if Ri is matched, but no longer including Fr# in scaling.
+        Fr_FC_r = 1 #assume we can match if Ri is matched
 
         t_FC_r = length_r/u_ref_FC_r #use ref vel of core to determine time scaling for forced circulation
 
@@ -309,40 +292,7 @@ for t in np.geomspace(1,1e8, num=9): #over the transient, loop over time increme
         deltaP_FC_r = rho_r*length_r
         Ho_p = deltaP_FC_p/(rho_p*g) #this is based on the KP-SAM preliminary data for pressure drop head.
         Ho_m = Ho_p*Ho_r
-        var_out.loc['t='+t,'u_ref_FC_m'] = u_ref_FC_m
-
-        #5 Matching friction and form losses in loop.
-        # during forced circulation, F > f. During natural circulation, f is comparable to F.
-
-        sumF = 0.0
-        for i in range(15,50):
-            if df.iloc[i,1] == 0: #if the component has no area (aka a solid)
-                pass
-            elif  df.iloc[i,3] == 0: #if the component has no length, same idea...
-                pass
-            else:
-                sumF += 0.5*(df.iloc[i,9]*(A_ref_p/df.iloc[i,1])**2)  # #9 are the Ks, index 1 are the areas
-
-        F_FC_p = sumF # this is for matching total friction loss for entire loop during forced circulation
-        F_FC_r = 1.0 #assume it can be matched because we can just adjust the needle valves to match F_p.
-        F_FC_m = F_FC_p*F_FC_r
-
-        # There is no F_NC_P because it is assumed given the normal ops matching
-        # aka the matching above for SS can be applied to the transient well (as per the scaling report).
-        sumf = 0.0
-        for i in range(15,50):
-            if df.iloc[i,1] == 0: #if the component has no area (aka a solid)
-                pass
-            elif  df.iloc[i,3] == 0: #if the component has no length, same idea...
-                pass
-            else:
-                sumf += 0.5*(df.iloc[i,10]*(df.iloc[i,3]/(2.0*df.iloc[i,2]))*(A_ref_p/df.iloc[i,1])**2)  # Row 1 is Areas, #2 is radius, #3 is length.
-        f_FC_p = sumf # this is for matching total friction loss for entire loop during natural circulation
-        f_FC_r = 1.0
-        f_FC_m = f_FC_p*f_FC_r
-
-        var_out.loc['t='+t,'F_FC_m'] = F_FC_m
-        var_out.loc['t='+t,'f_FC_m'] = f_FC_m
+        var_out.loc['t='+t,'u_ref_m'] = u_ref_FC_m
 
         #6a Core (rx) heat transfer and fluid dynamics scaling
 
@@ -351,7 +301,7 @@ for t in np.geomspace(1,1e8, num=9): #over the transient, loop over time increme
         Dh_rx_m = Dh_rx_p*Dh_rx_r
 
         ehAs_rx_r = rho_r*cpf_r*u_ref_FC_r*A_ref_r # eq. 102 of scaling report
-        ehAs_rx_p = 1.0*500*(2*np.pi*(df.loc['Core_Active_Section','2']))*(df.loc['Core_Active_Section','3']+df.loc['Core_Lower_Section','3']+df.loc['Core_Upper_Section','3']) #e=1,h = 500, assumes entire core has radius of active core (over-estimation of As)
+        ehAs_rx_p = df.loc['e_rx_p','0']*df.loc['h_rx_p','0']*(2*np.pi*(df.loc['Core_Active_Section','2']))*(df.loc['Core_Active_Section','3']+df.loc['Core_Lower_Section','3']+df.loc['Core_Upper_Section','3']) #e=1,h = 500, assumes entire core has radius of active core (over-estimation of As)
         ehAs_rx_m = ehAs_rx_p*ehAs_rx_r
 
         St_FC_rx_p = (ehAs_rx_p*deltaT_sf_p/(rho_p*u_ref_FC_p*A_ref_p*cp_p*deltaT_p))
@@ -363,8 +313,6 @@ for t in np.geomspace(1,1e8, num=9): #over the transient, loop over time increme
         #... differences between system-wide Dh scaling and pebble diameter scaling
         Re_FC_rx_r = Re_FC_rx_m/Re_FC_rx_p
 
-        var_out.loc['t='+t,'ehAs_rx_m'] = ehAs_rx_m
-
         #6b Intermediate Heat Exchanger (hx) heat transfer and fluid dynamics scaling
         Dh_hx_r = A_ref_r**0.5 # hydraulic diameter of hx tube
         #Dh_hx_r = .46 #select as independent variable to match Re_FC_hx_r
@@ -372,7 +320,7 @@ for t in np.geomspace(1,1e8, num=9): #over the transient, loop over time increme
         Dh_hx_m = Dh_hx_p*Dh_hx_r
 
         ehAs_hx_r = rho_r*cpf_r*u_ref_FC_r*n_r*(Dh_hx_r**2)
-        ehAs_hx_p = 1.0*500*2*np.pi*((df.loc['Intermediate_HX','1']/np.pi)**.5)*(df.loc['Intermediate_HX','3']) # e = 1, h = 500, surface area from circumfrence and length
+        ehAs_hx_p = df.loc['e_hx_p','0']*df.loc['h_hx_p','0']*2*np.pi*((df.loc['Intermediate_HX','1']/np.pi)**.5)*(df.loc['Intermediate_HX','3']) # e = 1, h = 500, surface area from circumfrence and length
         ehAs_hx_m = ehAs_hx_p*ehAs_hx_r
 
         St_FC_hx_p = (ehAs_hx_p*deltaT_sf_p/(rho_p*u_ref_FC_hx_p*(np.pi/4)*(Dh_hx_p**2)*cp_p*deltaT_p))
@@ -383,15 +331,13 @@ for t in np.geomspace(1,1e8, num=9): #over the transient, loop over time increme
         Re_FC_hx_r = rho_r*u_ref_FC_r*Dh_hx_r/visc_r
         Re_FC_hx_m = Re_FC_hx_p*Re_FC_hx_r
 
-        var_out.loc['t='+t,'ehAs_hx_m'] = ehAs_hx_m
-
         #6c Downcomer (dc) heat transfer and fluid dynamics scaling
         Dh_dc_r = length_r #even though Dh is a function of flow area, in the DC, the channel width length scale drives the flow behavior (Re#).
         Dh_dc_p = (df.loc['Downcomer_Upper_Section','4'])
         Dh_dc_m = Dh_dc_p*Dh_dc_r
 
         ehAs_dc_r = rho_r*cpf_r*u_ref_FC_r*(Dh_dc_r**2)
-        ehAs_dc_p = 1.0*500*(2*np.pi*1.876)*(df.loc['Downcomer_Middle_Section','3']+df.loc['Downcomer_Upper_Section','3']+df.loc['Downcomer_Lower_Section','3']+df.loc['Downcomer_Upper_Upper','3'])
+        ehAs_dc_p = df.loc['e_dc_p','0']*df.loc['h_dc_p','0']*(2*np.pi*1.876)*(df.loc['Downcomer_Middle_Section','3']+df.loc['Downcomer_Upper_Section','3']+df.loc['Downcomer_Lower_Section','3']+df.loc['Downcomer_Upper_Upper','3'])
         # e=1, h=500,downcomer radius = 1.876 from 'KP-SAM inputs checking'.
         ehAs_dc_m = ehAs_dc_p*ehAs_dc_r
 
@@ -403,15 +349,13 @@ for t in np.geomspace(1,1e8, num=9): #over the transient, loop over time increme
         Re_FC_dc_r = rho_r*u_ref_FC_r*Dh_dc_r/visc_r
         Re_FC_dc_m = Re_FC_dc_p*Re_FC_dc_r
 
-        var_out.loc['t='+t,'ehAs_dc_m'] = ehAs_dc_m
-
         #6d Reflector Region bypass channel (rb = reflector bypass) heat transfer and fluid dynamics scaling
         Dh_rb_r = A_ref_r**0.5
         Dh_rb_p = (df.loc['Reflector_Bypass','4'])
         Dh_rb_m = Dh_rb_p*Dh_rb_r
 
         ehAs_rb_r = rho_r*cpf_r*u_ref_FC_r*(Dh_rb_r**2)
-        ehAs_rb_p = 1.0*500*np.pi*df.loc['Reflector_Bypass','4']*(df.loc['Reflector_Bypass','3']) #e=1,h=500
+        ehAs_rb_p = df.loc['e_rb_p','0']*df.loc['h_rb_p','0']*np.pi*df.loc['Reflector_Bypass','4']*(df.loc['Reflector_Bypass','3']) #e=1,h=500
         ehAs_rb_m = ehAs_rb_p*ehAs_rb_r
 
         St_FC_rb_p = (ehAs_rb_p*deltaT_sf_p/(rho_p*u_ref_FC_p*(np.pi/4)*(Dh_rb_p**2)*cp_p*deltaT_p))
@@ -424,6 +368,45 @@ for t in np.geomspace(1,1e8, num=9): #over the transient, loop over time increme
 
     #NATURAL CIRCULATION phenomena, relevant to transient part of tests
 
+    #Right now these are all constant for all time because h_p is constant. If we have h vary in time, than these will change. But this would be very difficult \
+    # ... to  change in the experiment.
+    var_out.loc['t='+t,'ehAs_dc_m'] = ehAs_dc_m
+    var_out.loc['t='+t,'ehAs_hx_m'] = ehAs_hx_m
+    var_out.loc['t='+t,'ehAs_rx_m'] = ehAs_rx_m
+
+    #5 Matching F# in the loop.
+    # during forced circulation, form loss >> friction loss, so only form factor K is considered to match F.
+
+    sumK = 0.0
+    for i in range(15,50):
+        if df.iloc[i,1] == 0: #if the component has no area (aka a solid)
+            pass
+        elif  df.iloc[i,3] == 0: #if the component has no length, same idea...
+            pass
+        else:
+            sumK += 0.5*(df.iloc[i,9]*(A_ref_p/df.iloc[i,1])**2)  # #9 are the Ks, index 1 are the areas. See Table 2 of topical report.
+
+    # There is no F_NC_P because it is assumed given the normal ops matching, aka the matching above for SS can be applied to the transient well (as per the scaling report).
+
+    sumf = 0.0
+    for i in range(15,50):
+        if df.iloc[i,1] == 0: #if the component has no area (aka a solid)
+            pass
+        elif  df.iloc[i,3] == 0: #if the component has no length, same idea...
+            pass
+        else:
+            sumf += 0.5*(df.iloc[i,10]*(df.iloc[i,3]/(2.0*df.iloc[i,2]))*(A_ref_p/df.iloc[i,1])**2)  # Row 1 is Areas, #2 is radius, #3 is length.
+    f_p = sumf # this is for matching total major loss for the loop
+    f_r = 1.0
+    f_m = f_p*f_r
+
+    F_p = sumK + sumf # these are split up because currently the topical report only accounts for minor loss since it assumes K>>f during SS.
+    F_r = 1.0 #assume it can be matched because we can just adjust the needle valves to match F_p.
+    F_m = F_p*F_r
+
+    var_out.loc['t='+t,'F_m'] = F_m
+    var_out.loc['t='+t,'f_m'] = f_m
+
     #7a Matching system-wide nat. circ. behavior using Ri# and time and reference velocity scaling
     Ri_NC_r = 1 # we can assume this if we match the decay curve with our power input into facility during nat. circulation phase (at the reduced scale).
     Ri_NC_p = (g*beta_p*deltaT_p*length_p/((u_ref_NC_p)**2)) #this length scale should be [centerline of DC - centerline of core], which is about 0.
@@ -433,7 +416,7 @@ for t in np.geomspace(1,1e8, num=9): #over the transient, loop over time increme
     u_ref_NC_r = u_ref_FC_r #eq 106 of scaling report
     u_ref_NC_m = u_ref_NC_p*u_ref_NC_r
     t_NC_r = t_FC_r #eq 106 of scaling report
-    var_out.loc['t='+t,'u_ref_NC_m'] = u_ref_NC_m
+    var_out.loc['t='+t,'u_ref_m'] = u_ref_NC_m
 
     #8a System-wide heat capacity matching
     # this section is dependent on model material selection, so the model materials are assumed. (pyrex for vessel and steel for barrel)
@@ -446,15 +429,13 @@ for t in np.geomspace(1,1e8, num=9): #over the transient, loop over time increme
     rho_rv_p = df.loc[t,'21']
     rho_bl_p = df.loc[t,'21']
 
-    #Material property data for model (pyrex for vessel/barrel, and ETU-10 for reflector (rough approx))
-    cp_rx_m = 1517 # ETU-10 (unimportant for now since it isn't used)
-    cp_rf_m = 1517 # ETU-10 (unimportant for now since it isn't used)
-    rho_rx_m = 1760 # ETU-10 (unimportant for now since it isn't used)
-    rho_rf_m = 1760 # ETU-10 (unimportant for now since it isn't used)
-    cp_rv_m = 1180 #pyrex
-    cp_bl_m = 500 #stainless steel
-    rho_rv_m = 2230 #pyrex
-    rho_bl_m = 8000 #stainless steel
+    #Additional needed material property data for model (pyrex for vessel/barrel, and ETU-10 for reflector (rough approx))
+    cp_rf_m = df.loc['cp_rf_m','0'] # ETU-10 (unimportant for now since it isn't used)
+    rho_rf_m = df.loc['rho_rf_m','0'] # ETU-10 (unimportant for now since it isn't used)
+    cp_rv_m = df.loc['cp_rv_m','0'] #pyrex
+    cp_bl_m = df.loc['cp_bl_m','0'] #stainless steel
+    rho_rv_m = df.loc['rho_rv_m','0'] #pyrex
+    rho_bl_m = df.loc['rho_bl_m','0'] #stainless steel
 
     #Calculating the volumes of all of the KP-SAM components based on their dimensions in the KP-SAM input card
     vol_pb_s_p = (df.loc['Core_Active_Section','1'])*(df.loc['Core_Active_Section','3'])*(1-por_p) + (df.loc['Core_Upper_Section','1'])*(df.loc['Core_Upper_Section','3'])*(1-por_p) + (df.loc['Core_Lower_Section','1'])*(df.loc['Core_Lower_Section','3'])*(1-por_p)
@@ -573,9 +554,12 @@ for t in np.geomspace(1,1e8, num=9): #over the transient, loop over time increme
     #ratio of core/IHXs energy capacity
     EC_rx_hx_m = (energy_core_solid_m + energy_core_fluid_m)/(energy_IHXs_solid_m + energy_IHXs_fluid_m)
 
-    #model/prototype ratios
+    #important model/prototype relative solid energy capacity ratios to monitor. These are 1 ideally.
     EC_rx_dc_r = EC_rx_dc_m / EC_rx_dc_p
     EC_rx_hx_r = EC_rx_hx_m / EC_rx_hx_p
+
+    var_out.loc['t='+t,'EC_rx_dc_r'] = EC_rx_dc_r
+    var_out.loc['t='+t,'EC_rx_hx_r'] = EC_rx_hx_r
 
     #9a System-level scaling of loop geometry number, for preserving relative volumes and residence times (in-vessel 'loop')
 
@@ -590,7 +574,7 @@ for t in np.geomspace(1,1e8, num=9): #over the transient, loop over time increme
     # row 3 is Lengths. Row 1 is Areas.
     sumLA_p += df.loc['Core_Lower_Section','3']/df.loc['Core_Lower_Section','1'] #core_lower
     sumLA_p += df.loc['Pipe_from_Lower_Plenum_to_Active_Core','3']/df.loc['Pipe_from_Lower_Plenum_to_Active_Core','1'] #pipe from lower plenum to active core
-    sumLA_p += df.loc['Core_Active_Section','3']/(df.loc['Core_Active_Section','1']*0.4*0.9) #active core, must reduce area to account for the pebbles and reflector bypass considerations of the model active core area measurement
+    sumLA_p += df.loc['Core_Active_Section','3']/(df.loc['Core_Active_Section','1']*core_scaling_factor) #active core, must reduce area to account for the pebbles and reflector bypass considerations of the model active core area measurement
     sumLA_p += df.loc['Core_Upper_Section','3']/df.loc['Core_Upper_Section','1'] #upper core
     sumLA_p += df.loc['Pipe_from_Active_Core_to_Upper_Plenum','3']/df.loc['Pipe_from_Active_Core_to_Upper_Plenum','1'] #pipe from active core to upper plenum
     sumLA_p += df.loc['Pipe_from_Pump_Pool_to_Fluidic_Doide','3']/df.loc['Pipe_from_Pump_Pool_to_Fluidic_Doide','1'] #pipe from upper plenum to diode
@@ -619,8 +603,8 @@ for t in np.geomspace(1,1e8, num=9): #over the transient, loop over time increme
     G_p = sumG
     G_m = G_p*G_r
 
-    var_out.loc['t='+t,'G_m'] = G_m
-    var_out.loc['t='+t,'sumLA_m'] = sumLA_m # this is the sum of the lengths/areas for loop components.
+    #var_out.loc['t='+t,'G_m'] = G_m
+    #var_out.loc['t='+t,'sumLA_m'] = sumLA_m # this is the sum of the lengths/areas for loop components.
 
     #10a Core (rx) component heat transfer and fluid dynamics scaling
     St_NC_rx_r = 1.0
@@ -662,9 +646,8 @@ for t in np.geomspace(1,1e8, num=9): #over the transient, loop over time increme
     Gr_NC_rb_m = Gr_NC_rb_p*Gr_NC_rb_r
 
     #11a Core (rx) part 2- component solid heat transfer
-    #choice of model material will dictate ls.
-    h_NC_rx_p = 1.0 #need heat transfer coefficient from pebble to flibe from KP-SAM.
-    h_NC_rx_m = 1.0 #assume it is the same in facility.
+    h_NC_rx_p = df.loc['h_NC_rx_p','0'] #need heat transfer coefficient from pebble to flibe from KP-SAM.
+    h_NC_rx_m = df.loc['h_NC_rx_m','0']#assume it is the same in facility.
     h_NC_rx_r = h_NC_rx_m/h_NC_rx_p #assume we can match this for now. Can change this.
 
     Bi_NC_rx_r = 1.0 #we assume this, drives ls_rx_m and/or material selection
@@ -680,8 +663,8 @@ for t in np.geomspace(1,1e8, num=9): #over the transient, loop over time increme
 
     #11b Reflector (rf) - component solid heat transfer
     #choice of model material will dictate ls.
-    h_NC_rf_p = 1.0 #need, heat transfer coefficient from flibe to reflector from KP-SAM.
-    h_NC_rf_m = 1.0 #can input this once it is determined
+    h_NC_rf_p = df.loc['h_NC_rf_p','0'] #need, heat transfer coefficient from flibe to reflector from KP-SAM.
+    h_NC_rf_m = df.loc['h_NC_rf_m','0'] #can input this once it is determined
     h_NC_rf_r = h_NC_rf_m/h_NC_rf_p
 
     Bi_NC_rf_r = 1.0 #assume we want to match this.
@@ -697,8 +680,8 @@ for t in np.geomspace(1,1e8, num=9): #over the transient, loop over time increme
 
     #11c: Barrel (bl) - component solid heat transfer
 
-    h_NC_bl_p = 1.0 #need, heat transfer coefficient from flibe to barrel from KP-SAM.
-    h_NC_bl_m = 1.0 #can input this once it is determined
+    h_NC_bl_p = df.loc['h_NC_bl_p','0'] #need, heat transfer coefficient from flibe to barrel from KP-SAM.
+    h_NC_bl_m = df.loc['h_NC_bl_m','0'] #can input this once it is determined
     ks_bl_p = ks_rv_p #using SS316 for both
     ks_bl_r = ks_rv_r
     h_NC_bl_r = h_NC_bl_m/h_NC_bl_p
@@ -716,8 +699,8 @@ for t in np.geomspace(1,1e8, num=9): #over the transient, loop over time increme
 
     #11d Downcomer vessel wall (dc) component solid heat transfer
 
-    h_NC_dc_p = 100 # heat transfer coefficient from reflector to downcomer salt in KP-SAM
-    h_NC_dc_m = 100 #can input this once it is determined. Assume matched for now.
+    h_NC_dc_p = df.loc['h_NC_dc_p','0'] # heat transfer coefficient from reflector to downcomer salt in KP-SAM
+    h_NC_dc_m = df.loc['h_NC_dc_m','0'] #can input this once it is determined. Assume matched for now.
     h_NC_dc_r = h_NC_dc_m/h_NC_dc_p
 
     #these are included in downcomer section, but are for the vessel wall.
@@ -785,7 +768,7 @@ for t in np.geomspace(1,1e8, num=9): #over the transient, loop over time increme
     A_h_r = ((A_ref_r)**(1/2))*length_r #area of hot surface, pi*diameter*length
     view_r = 1.0 #view factor ratio. Assume we match this. (0.7 for KP-SAM) Assume we can match it since we will be using a convection hx.
     T_rv_p = df.loc[t,'20']
-    T_tcp_p = 100+273.15 #assume that RVACS panels are at constant temp of boiling coolant at 100C after short transient.
+    T_tcp_p = df.loc['T_tcp_p','0'] #assume that RVACS panels are at constant temp of boiling coolant at 100C after short transient.
     #since we are including rad HT between two surfaces, it is 0 initially since the temps are about the same. After water//
     #rushes into panels, they cool to about 100C approx.
     #deltaTfourth_p = (T_rv_p**4) - (T_tcp_p**4) #tcp = Thermosyphon panel. Data from KP-SAM.
@@ -793,18 +776,15 @@ for t in np.geomspace(1,1e8, num=9): #over the transient, loop over time increme
     #deltaTfourth_r = deltaTfourth_m/deltaTfourth_p
     q_RVACS_m = q_RVACS_p*qsource_m/qsource_p #scaled RVACS heat removal requirement.
 
-    if t=='SS':
-        pass
-    else:
-        var_out.loc['t='+t,'q_RVACS_m'] = q_RVACS_m
+    var_out.loc['t='+t,'q_RVACS_m'] = q_RVACS_m
 
     #MISC RATIOS that may or may not be desired in the future
     por_r = 1.0 #matching porosity.
 
     # prototype heat transfer coefficients for each component. None of these are known, but estimates can be found.
-    h_FC_rx_p = 1.0
-    h_FC_rf_p = 1.0
-    h_FC_dc_p = 1.0
+    h_FC_rx_p = df.loc['h_FC_rx_p','0']
+    h_FC_rf_p = df.loc['h_FC_rf_p','0']
+    h_FC_dc_p = df.loc['h_FC_dc_p','0']
     h_FC_rx_r = 1.0
     h_FC_rf_r = 1.0
     h_FC_dc_r = 1.0
@@ -840,10 +820,10 @@ for t in np.geomspace(1,1e8, num=9): #over the transient, loop over time increme
     for i in range(15,51): #Scaling area
         (var_out.iloc[i,1]) = (df.iloc[i,1])*A_ref_r #scaling all component areas with the system-wide area scaling
         if i == 3: #if component is the active core, reducing the area further to account for the lack of pebbles in ITF-0 (the 0.40), the non-prototypical geometry of the ITF-0 core, and the reflector bypass and inflow/outflow fluid volumes (the 0.9).
-            (var_out.iloc[i,1]) = (df.iloc[i,1])*A_ref_r*0.40*0.9
+            (var_out.iloc[i,1]) = (df.iloc[i,1])*A_ref_r*core_scaling_factor
     for i in range(15,51):#Scaling radius for each component (derived from area scaling)
         if i == 3: #if component is the active core
-            (var_out.iloc[i,2]) = (df.iloc[i,2])*((A_ref_r*0.40*0.9)**.5)
+            (var_out.iloc[i,2]) = (df.iloc[i,2])*((A_ref_r*core_scaling_factor)**.5)
         else:
             (var_out.iloc[i,2]) = (df.iloc[i,2])*(A_ref_r**0.5) #based on the area scaling since radius is a function of area
     for i in range(15,51):#Scaling length (height) for all components
@@ -884,15 +864,15 @@ for t in np.geomspace(1,1e8, num=9): #over the transient, loop over time increme
     for i in range(15,51):#Scaling temperature
         (var_out.iloc[i,8]) = (df.iloc[i,8])*T_r
     for i in range(15,51):#Scaling form loss coefficient
-        (var_out.iloc[i,9]) = (df.iloc[i,9])*F_FC_r #we match this
+        (var_out.iloc[i,9]) = (df.iloc[i,9])*F_r #we match this
     for i in range(15,51):#Scaling friction loss coefficent
-        (var_out.iloc[i,10]) = (df.iloc[i,10])*F_FC_r #we match this
+        (var_out.iloc[i,10]) = (df.iloc[i,10])*F_r #we match this
 
     #need to check if the requirement from section #9a is still met
     sumLA2_m = 0.0
     sumLA2_m += var_out.iloc[15,3]/var_out.iloc[15,1] #core_lower
     sumLA2_m += var_out.iloc[16,3]/var_out.iloc[16,1] #pipe from lower plenum to active core
-    sumLA2_m += var_out.iloc[17,3]/(var_out.iloc[17,1]*(0.9*0.4)) #active core
+    sumLA2_m += var_out.iloc[17,3]/(var_out.iloc[17,1]*(core_scaling_factor)) #active core
     sumLA2_m += var_out.iloc[19,3]/var_out.iloc[19,1] #upper core
     sumLA2_m += var_out.iloc[18,3]/var_out.iloc[18,1] #pipe from active core to upper plenum
     sumLA2_m += var_out.iloc[39,3]/var_out.iloc[39,1] #pipe from upper plenum to diode
@@ -962,7 +942,7 @@ for t in np.geomspace(1,1e8, num=9): #over the transient, loop over time increme
 
     var_out.iloc[54,0] = 'F_r'
     var_out.iloc[54,t] = F_r
-    var_out.iloc[89,t] = (F_FC_p - F_FC_m)/F_FC_p
+    var_out.iloc[89,t] = (F_p - F_m)/F_p
 
     if t==1: #forced circulation, normal ops
         var_out.iloc[55,0] = 'Eu_FC_r'
