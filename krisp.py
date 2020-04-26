@@ -13,22 +13,25 @@ df = pd.read_csv('krisp_input.csv') #dataframe for prototype inputs
 numColumns_df = len(df.columns)
 numRows_df = len(df)
 
+time_steps = df['time'].tolist() #making time-steps into a list
+time_steps_len = len(time_steps)
+
 #OUTPUT CARD
 dim_out = pd.DataFrame(0, index=range(numRows_df), columns=range(numColumns_df)) #create dataframe for model outputs
 #dim_out.columns=df.columns # give all of the columns the same name
 #dim_out.loc[0]=df.loc[0] # give it same row of acronyms
 #dim_out['row index']=df['row index'] #first column is the list of variables, same for both
 
-scale_out = pd.DataFrame(0, index=range(34), columns=range(10)) #create dataframe for scaling groups outputted, 16 ratios, 10 time stamps.
-scale_out.columns = ['Scaling_Group', 't=SS','t=0','t=1','t=10','t=100','t=1000','t=10000','t=100000','t=600000']
+scale_out = pd.DataFrame(0, index=range(numColumns_dfum), columns=range(time_steps_len)) #create dataframe for scaling groups outputted, 16 ratios, 10 time stamps.
+scale_out.columns = ['Scaling_Group'] + time_steps 
 numColumns_scale_out = len(scale_out.columns)
 numRows_scale_out = len(scale_out)
 for i in range(1,numColumns_scale_out):  #fill the table with '-' (make distinction between unintentional 0 and intentional 0)
     for j in range(1,numRows_scale_out):
         scale_out.iloc[j,i] = '-'
 
-dist_out = pd.DataFrame(0, index=range(34), columns=range(10)) #create dataframe for scaling groups distortions outputted, 16 ratios, 10 time stamps.
-dist_out.columns = ['Scaling_Group', 't=SS','t=0','t=1','t=10','t=100','t=1000','t=10000','t=100000','t=600000']
+dist_out = pd.DataFrame(0, index=range(numColumns_df), columns=range(time_steps_len)) #create dataframe for scaling groups distortions outputted, 16 ratios, 10 time stamps.
+dist_out.columns = ['Scaling_Group'] + time_steps
 numColumns_dist_out = len(dist_out.columns)
 numRows_dist_out = len(dist_out)
 for i in range(1,numColumns_dist_out):  #fill the table with '-' (make distinction between unintentional 0 and intentional 0)
@@ -45,20 +48,43 @@ for i in range(0,31): #columns
     for j in range(0,125): #rows
         if var_out.iloc[j,i] == 0:
             var_out.iloc[j,i] = '-'
+# need to change the variable names i suppose and the 0 and -
+
 
 #Naming the rows for the output file.
-var_out.loc[0,'title column'] = 't=SS'
-var_out.loc[1,'title column'] = 't=0'
-var_out.loc[2,'title column'] = 't=1'
-var_out.loc[3,'title column'] = 't=10'
-var_out.loc[4,'title column'] = 't=100'
-var_out.loc[5,'title column'] = 't=1000'
-var_out.loc[6,'title column'] = 't=10000'
-var_out.loc[7,'title column'] = 't=100000'
-var_out.loc[8,'title column'] = 't=600000'
-var_out.loc[14,'time'] = 'Model Dimensions'
-var_out.loc[52,'time'] = 'Scaling Ratios'
-var_out.loc[87,'time'] = 'Scaling Distortions'
+row = 0
+for i in time_steps:
+	k = str(i)
+	var_out.loc[row, 'title column'] = k
+	val_out.loc[row, 'time'] = k
+	row += 1
+
+
+### og code block	
+# var_out.loc[0,'title column'] = 't=SS'
+# var_out.loc[1,'title column'] = 't=0'
+# var_out.loc[2,'title column'] = 't=1'
+# var_out.loc[3,'title column'] = 't=10'
+# var_out.loc[4,'title column'] = 't=100'
+# var_out.loc[5,'title column'] = 't=1000'
+# var_out.loc[6,'title column'] = 't=10000'
+# var_out.loc[7,'title column'] = 't=100000'
+# var_out.loc[8,'title column'] = 't=600000'
+# var_out.loc[14,'time'] = 'Model Dimensions'
+# var_out.loc[52,'time'] = 'Scaling Ratios'
+# var_out.loc[87,'time'] = 'Scaling Distortions'
+
+# var_out.loc[0,'time'] = 'SS' #naming first column  of variables table.
+# var_out.loc[1,'time'] = 't=0'
+# var_out.loc[2,'time'] = 't=1'
+# var_out.loc[3,'time'] = 't=10'
+# var_out.loc[4,'time'] = 't=100'
+# var_out.loc[5,'time'] = 't=1000'
+# var_out.loc[6,'time'] = 't=10000'
+# var_out.loc[7,'time'] = 't=100000'
+# var_out.loc[8,'time'] = 't=600000'
+
+### og code block
 
 var_out.loc[15:51,'time'] = df.loc[15:51,'title column'] #naming first column of model dimensions table.
 
@@ -73,15 +99,7 @@ var_out.iloc[14,9] = df.iloc[14,9]
 var_out.iloc[14,10] = df.iloc[14,10]
 var_out.iloc[14,11] = df.iloc[14,11]
 
-var_out.loc[0,'time'] = 'SS' #naming first column  of variables table.
-var_out.loc[1,'time'] = 't=0'
-var_out.loc[2,'time'] = 't=1'
-var_out.loc[3,'time'] = 't=10'
-var_out.loc[4,'time'] = 't=100'
-var_out.loc[5,'time'] = 't=1000'
-var_out.loc[6,'time'] = 't=10000'
-var_out.loc[7,'time'] = 't=100000'
-var_out.loc[8,'time'] = 't=600000'
+
 
 var_out.iloc[52,2] = 'SS' #naming top row of ratios table.
 var_out.iloc[52,3] = 't=0'
@@ -150,33 +168,41 @@ for i in range(0,1): #columns
 #  12. Match solid time constants
 #  13. deriving power ratio for core
 #------------------------------------------------------------------------------------------------
-SS = 'SS'
-for t in np.geomspace(1,1e8, num=9): #over the transient, loop over time increments (over time stamp 9,0s,1s,10s,100s,1000s,1e4,1e5,6e5)
-    if t==1: #need this if statement section because function geomspace cannot start at 0
-        t='SS'
-    elif t==10:
-        t=0
-    elif t==1e8:
-        t=6e5 #this is the largest time elapsed that we have data for.
-    else:
-        t=t/100
+# SS = 'SS' #krisp og code
 
-    if t == 'SS':
-        pass
-    else:
-        t = int(t)  #convert to integer so it doesn't have the '.0' at the end.
+
+
+for t in time_steps: #over the transient, loop over time increments (over time stamp 9,0s,1s,10s,100s,1000s,1e4,1e5,6e5)
+    
+	### og code block
+    # if t==1: #need this if statement section because function geomspace cannot start at 0
+    #     t='SS'
+    # if t==10:
+    #     t=0
+    # elif t==1e8:
+    #     t=6e5 #this is the largest time elapsed that we have data for.
+    # else:
+    #     t=t/100
+    # if t == 'SS':
+    #     pass
+    # else:
+    #     t = int(t)  #convert to integer so it doesn't have the '.0' at the end.
+    ### og code block
+
     t = str(t)  #need it to be a string for calling using df.loc function of the PANDAS dataframe function set.
 
     #DETERMINING CHARACTERISTIC RATIOS, AND MODEL-TO-PROTOTYPE RATIOS
     #1 // First step is matching Pr#
-    Pr_p = df.loc[t,'8'] / df.loc[t,'9'] # Pr Number at time t
+    # Pr_p = df.loc[t,'8'] / df.loc[t,'9'] # krisp Pr Number at time t #kinematic_viscosity * thermal_diffusivity of prototype
+    Pr_p = df.loc[t, ]
     Pr_r = 1.0 #forcing this to match
     Pr_m = Pr_p*Pr_r
 
     # for each time t, we have a Pr_m requirement from above. I used table in 'Salt and simulant fluids thermophysical properties.excel' to select a T_mean such that Pr# = 1.
     # see page 38 of scaling report.
-    T_m = df.loc[t,'33'] #in K
+    # T_m = df.loc[t,'33'] #in K #krisp T_mean
 
+    T_m  #temperature of flibe not from the input file
     t = str(t) #need it to be a string again for using PANDAS dataframe functions like df.loc.
 
     # MISC PROPERTIES
@@ -261,110 +287,114 @@ for t in np.geomspace(1,1e8, num=9): #over the transient, loop over time increme
     l_peb_r = df.loc['l_peb_r','0']  # currently the same as the height ratio, although this can change to change Re# in pebble bed.
     l_peb_m = l_peb_p*l_peb_r
 
-    if t=='SS': # this whole section is for normal operation (steady-state) only.
+    
+    ### steady state code block
+    # if t=='SS': # this whole section is for normal operation (steady-state) only.
 
-        #4a System-level scaling of Ri#, Fr#, Eu#, reference velocity. Here we establish the facility-wide length and area scaling to match these important phenomena.
-        length_p = df.loc['length_p','0'] #length of vessel
-        length_r = df.loc['length_r','0'] #this is the length scale for all components, free to choose.
-        #area_r = 1/11.787 #this is driven by downcomer flow area.
-        #area_r = 1/8.89 #this is if DC OD=8.858in
-        area_r = df.loc['area_r','0'] #this is 1/35.9, from DC OD=4.72in
-        core_scaling_factor = df.loc['core_scaling_factor','0'] #0.4*0.9. The 0.4 comes from the porosity, accounts for the lack of pebbles in the model. 0.9 accounts for smaller volumes of upper and lower core sections, given model is one long pipe.
-        A_ref_r = ((length_r)**2)*(area_r) # the ((0.47)**2) comes from 1/2 length for geometric scaling, and area_r for further direct area scaling.
-        #print('Check 2 Passed')
-        A_ref_p = df.loc['Core_Active_Section','2']
-        A_ref_m = A_ref_p*A_ref_r
-        n_r = df.loc['n_r','0'] #from scaling report, number of parallel flow channels. may have to update this.
+    #     #4a System-level scaling of Ri#, Fr#, Eu#, reference velocity. Here we establish the facility-wide length and area scaling to match these important phenomena.
+    #     length_p = df.loc['length_p','0'] #length of vessel
+    #     length_r = df.loc['length_r','0'] #this is the length scale for all components, free to choose.
+    #     #area_r = 1/11.787 #this is driven by downcomer flow area.
+    #     #area_r = 1/8.89 #this is if DC OD=8.858in
+    #     area_r = df.loc['area_r','0'] #this is 1/35.9, from DC OD=4.72in
+    #     core_scaling_factor = df.loc['core_scaling_factor','0'] #0.4*0.9. The 0.4 comes from the porosity, accounts for the lack of pebbles in the model. 0.9 accounts for smaller volumes of upper and lower core sections, given model is one long pipe.
+    #     A_ref_r = ((length_r)**2)*(area_r) # the ((0.47)**2) comes from 1/2 length for geometric scaling, and area_r for further direct area scaling.
+    #     #print('Check 2 Passed')
+    #     A_ref_p = df.loc['Core_Active_Section','2']
+    #     A_ref_m = A_ref_p*A_ref_r
+    #     n_r = df.loc['n_r','0'] #from scaling report, number of parallel flow channels. may have to update this.
 
-        Ri_FC_p = g*beta_p*(deltaT_p)*length_p/(u_ref_FC_p**2)
-        Ri_FC_r = 1 #assume we can match
-        Ri_FC_m = Ri_FC_p*Ri_FC_r
-        u_ref_FC_r = (length_r)**.5
-        u_ref_FC_m = u_ref_FC_p*u_ref_FC_r
-        Fr_FC_r = 1 #assume we can match if Ri is matched
+    #     Ri_FC_p = g*beta_p*(deltaT_p)*length_p/(u_ref_FC_p**2)
+    #     Ri_FC_r = 1 #assume we can match
+    #     Ri_FC_m = Ri_FC_p*Ri_FC_r
+    #     u_ref_FC_r = (length_r)**.5
+    #     u_ref_FC_m = u_ref_FC_p*u_ref_FC_r
+    #     Fr_FC_r = 1 #assume we can match if Ri is matched
 
-        t_FC_r = length_r/u_ref_FC_r #use ref vel of core to determine time scaling for forced circulation
+    #     t_FC_r = length_r/u_ref_FC_r #use ref vel of core to determine time scaling for forced circulation
 
-        Eu_FC_p = deltaP_p/(rho_p*(u_ref_FC_p**2)) #used reference vel. of core for Eu#
-        Eu_FC_r = 1.0 #matched if pump head ratio (Ho_r) matches length ratio (length_r).
-        Eu_FC_m = Eu_FC_p*Eu_FC_r
-        Ho_r = length_r
-        deltaP_FC_r = rho_r*length_r
-        Ho_p = deltaP_FC_p/(rho_p*g) #this is based on the KP-SAM preliminary data for pressure drop head.
-        Ho_m = Ho_p*Ho_r
-        var_out.loc['t='+t,'u_ref_m'] = u_ref_FC_m
+    #     Eu_FC_p = deltaP_p/(rho_p*(u_ref_FC_p**2)) #used reference vel. of core for Eu#
+    #     Eu_FC_r = 1.0 #matched if pump head ratio (Ho_r) matches length ratio (length_r).
+    #     Eu_FC_m = Eu_FC_p*Eu_FC_r
+    #     Ho_r = length_r
+    #     deltaP_FC_r = rho_r*length_r
+    #     Ho_p = deltaP_FC_p/(rho_p*g) #this is based on the KP-SAM preliminary data for pressure drop head.
+    #     Ho_m = Ho_p*Ho_r
+    #     var_out.loc['t='+t,'u_ref_m'] = u_ref_FC_m
 
-        #6a Core (rx) heat transfer and fluid dynamics scaling
+    #     #6a Core (rx) heat transfer and fluid dynamics scaling
 
-        Dh_rx_p = (df.loc['Core_Active_Section','4'])  # hydraulic diameter in active core region
-        Dh_rx_r = (A_ref_r**0.5) # Dh = A/P and P = pi*D so Dh_r = sqrt(A_r)
-        Dh_rx_m = Dh_rx_p*Dh_rx_r
+    #     Dh_rx_p = (df.loc['Core_Active_Section','4'])  # hydraulic diameter in active core region
+    #     Dh_rx_r = (A_ref_r**0.5) # Dh = A/P and P = pi*D so Dh_r = sqrt(A_r)
+    #     Dh_rx_m = Dh_rx_p*Dh_rx_r
 
-        ehAs_rx_r = rho_r*cpf_r*u_ref_FC_r*A_ref_r # eq. 102 of scaling report
-        ehAs_rx_p = df.loc['e_rx_p','0']*df.loc['h_rx_p','0']*(2*np.pi*(df.loc['Core_Active_Section','2']))*(df.loc['Core_Active_Section','3']+df.loc['Core_Lower_Section','3']+df.loc['Core_Upper_Section','3']) #e=1,h = 500, assumes entire core has radius of active core (over-estimation of As)
-        ehAs_rx_m = ehAs_rx_p*ehAs_rx_r
+    #     ehAs_rx_r = rho_r*cpf_r*u_ref_FC_r*A_ref_r # eq. 102 of scaling report
+    #     ehAs_rx_p = df.loc['e_rx_p','0']*df.loc['h_rx_p','0']*(2*np.pi*(df.loc['Core_Active_Section','2']))*(df.loc['Core_Active_Section','3']+df.loc['Core_Lower_Section','3']+df.loc['Core_Upper_Section','3']) #e=1,h = 500, assumes entire core has radius of active core (over-estimation of As)
+    #     ehAs_rx_m = ehAs_rx_p*ehAs_rx_r
 
-        St_FC_rx_p = (ehAs_rx_p*deltaT_sf_p/(rho_p*u_ref_FC_p*A_ref_p*cp_p*deltaT_p))
-        St_FC_rx_r = 1.0
-        St_FC_rx_m = St_FC_rx_p*St_FC_rx_r
+    #     St_FC_rx_p = (ehAs_rx_p*deltaT_sf_p/(rho_p*u_ref_FC_p*A_ref_p*cp_p*deltaT_p))
+    #     St_FC_rx_r = 1.0
+    #     St_FC_rx_m = St_FC_rx_p*St_FC_rx_r
 
-        Re_FC_rx_p = rho_p*u_ref_FC_p*l_peb_p/visc_p # Re# for core is a function of pebble diameter, which can be different from system-wide Dh scaling.
-        Re_FC_rx_m = rho_m*u_ref_FC_m*l_peb_m/visc_m # although, it will be a function of l_peb, and not l_peb directly. This is an approx. to allow for...
-        #... differences between system-wide Dh scaling and pebble diameter scaling
-        Re_FC_rx_r = Re_FC_rx_m/Re_FC_rx_p
+    #     Re_FC_rx_p = rho_p*u_ref_FC_p*l_peb_p/visc_p # Re# for core is a function of pebble diameter, which can be different from system-wide Dh scaling.
+    #     Re_FC_rx_m = rho_m*u_ref_FC_m*l_peb_m/visc_m # although, it will be a function of l_peb, and not l_peb directly. This is an approx. to allow for...
+    #     #... differences between system-wide Dh scaling and pebble diameter scaling
+    #     Re_FC_rx_r = Re_FC_rx_m/Re_FC_rx_p
 
-        #6b Intermediate Heat Exchanger (hx) heat transfer and fluid dynamics scaling
-        Dh_hx_r = A_ref_r**0.5 # hydraulic diameter of hx tube
-        #Dh_hx_r = .46 #select as independent variable to match Re_FC_hx_r
-        Dh_hx_p = (df.loc['Intermediate_HX','4'])  # diameter of HX tube, Dh
-        Dh_hx_m = Dh_hx_p*Dh_hx_r
+    #     #6b Intermediate Heat Exchanger (hx) heat transfer and fluid dynamics scaling
+    #     Dh_hx_r = A_ref_r**0.5 # hydraulic diameter of hx tube
+    #     #Dh_hx_r = .46 #select as independent variable to match Re_FC_hx_r
+    #     Dh_hx_p = (df.loc['Intermediate_HX','4'])  # diameter of HX tube, Dh
+    #     Dh_hx_m = Dh_hx_p*Dh_hx_r
 
-        ehAs_hx_r = rho_r*cpf_r*u_ref_FC_r*n_r*(Dh_hx_r**2)
-        ehAs_hx_p = df.loc['e_hx_p','0']*df.loc['h_hx_p','0']*2*np.pi*((df.loc['Intermediate_HX','1']/np.pi)**.5)*(df.loc['Intermediate_HX','3']) # e = 1, h = 500, surface area from circumfrence and length
-        ehAs_hx_m = ehAs_hx_p*ehAs_hx_r
+    #     ehAs_hx_r = rho_r*cpf_r*u_ref_FC_r*n_r*(Dh_hx_r**2)
+    #     ehAs_hx_p = df.loc['e_hx_p','0']*df.loc['h_hx_p','0']*2*np.pi*((df.loc['Intermediate_HX','1']/np.pi)**.5)*(df.loc['Intermediate_HX','3']) # e = 1, h = 500, surface area from circumfrence and length
+    #     ehAs_hx_m = ehAs_hx_p*ehAs_hx_r
 
-        St_FC_hx_p = (ehAs_hx_p*deltaT_sf_p/(rho_p*u_ref_FC_hx_p*(np.pi/4)*(Dh_hx_p**2)*cp_p*deltaT_p))
-        St_FC_hx_r = 1.0 #assumed in scaling report by constraining (hAs_rx_r).
-        St_FC_hx_m = St_FC_hx_p*St_FC_hx_r
+    #     St_FC_hx_p = (ehAs_hx_p*deltaT_sf_p/(rho_p*u_ref_FC_hx_p*(np.pi/4)*(Dh_hx_p**2)*cp_p*deltaT_p))
+    #     St_FC_hx_r = 1.0 #assumed in scaling report by constraining (hAs_rx_r).
+    #     St_FC_hx_m = St_FC_hx_p*St_FC_hx_r
 
-        Re_FC_hx_p = rho_p*u_ref_FC_p*Dh_hx_p/visc_p
-        Re_FC_hx_r = rho_r*u_ref_FC_r*Dh_hx_r/visc_r
-        Re_FC_hx_m = Re_FC_hx_p*Re_FC_hx_r
+    #     Re_FC_hx_p = rho_p*u_ref_FC_p*Dh_hx_p/visc_p
+    #     Re_FC_hx_r = rho_r*u_ref_FC_r*Dh_hx_r/visc_r
+    #     Re_FC_hx_m = Re_FC_hx_p*Re_FC_hx_r
 
-        #6c Downcomer (dc) heat transfer and fluid dynamics scaling
-        Dh_dc_r = length_r #even though Dh is a function of flow area, in the DC, the channel width length scale drives the flow behavior (Re#).
-        Dh_dc_p = (df.loc['Downcomer_Upper_Section','4'])
-        Dh_dc_m = Dh_dc_p*Dh_dc_r
+    #     #6c Downcomer (dc) heat transfer and fluid dynamics scaling
+    #     Dh_dc_r = length_r #even though Dh is a function of flow area, in the DC, the channel width length scale drives the flow behavior (Re#).
+    #     Dh_dc_p = (df.loc['Downcomer_Upper_Section','4'])
+    #     Dh_dc_m = Dh_dc_p*Dh_dc_r
 
-        ehAs_dc_r = rho_r*cpf_r*u_ref_FC_r*(Dh_dc_r**2)
-        ehAs_dc_p = df.loc['e_dc_p','0']*df.loc['h_dc_p','0']*(2*np.pi*1.876)*(df.loc['Downcomer_Middle_Section','3']+df.loc['Downcomer_Upper_Section','3']+df.loc['Downcomer_Lower_Section','3']+df.loc['Downcomer_Upper_Upper','3'])
-        # e=1, h=500,downcomer radius = 1.876 from 'KP-SAM inputs checking'.
-        ehAs_dc_m = ehAs_dc_p*ehAs_dc_r
+    #     ehAs_dc_r = rho_r*cpf_r*u_ref_FC_r*(Dh_dc_r**2)
+    #     ehAs_dc_p = df.loc['e_dc_p','0']*df.loc['h_dc_p','0']*(2*np.pi*1.876)*(df.loc['Downcomer_Middle_Section','3']+df.loc['Downcomer_Upper_Section','3']+df.loc['Downcomer_Lower_Section','3']+df.loc['Downcomer_Upper_Upper','3'])
+    #     # e=1, h=500,downcomer radius = 1.876 from 'KP-SAM inputs checking'.
+    #     ehAs_dc_m = ehAs_dc_p*ehAs_dc_r
 
-        St_FC_dc_p = (ehAs_dc_p*deltaT_sf_p/(rho_p*u_ref_FC_p*(np.pi/4)*(Dh_dc_p**2)*cp_p*deltaT_p))
-        St_FC_dc_r = 1.0 #assumed in scaling report by constraining (hAs_rx_r).
-        St_FC_dc_m = St_FC_dc_p*St_FC_dc_r
+    #     St_FC_dc_p = (ehAs_dc_p*deltaT_sf_p/(rho_p*u_ref_FC_p*(np.pi/4)*(Dh_dc_p**2)*cp_p*deltaT_p))
+    #     St_FC_dc_r = 1.0 #assumed in scaling report by constraining (hAs_rx_r).
+    #     St_FC_dc_m = St_FC_dc_p*St_FC_dc_r
 
-        Re_FC_dc_p = rho_p*u_ref_FC_p*Dh_dc_p/visc_p
-        Re_FC_dc_r = rho_r*u_ref_FC_r*Dh_dc_r/visc_r
-        Re_FC_dc_m = Re_FC_dc_p*Re_FC_dc_r
+    #     Re_FC_dc_p = rho_p*u_ref_FC_p*Dh_dc_p/visc_p
+    #     Re_FC_dc_r = rho_r*u_ref_FC_r*Dh_dc_r/visc_r
+    #     Re_FC_dc_m = Re_FC_dc_p*Re_FC_dc_r
 
-        #6d Reflector Region bypass channel (rb = reflector bypass) heat transfer and fluid dynamics scaling
-        Dh_rb_r = A_ref_r**0.5
-        Dh_rb_p = (df.loc['Reflector_Bypass','4'])
-        Dh_rb_m = Dh_rb_p*Dh_rb_r
+    #     #6d Reflector Region bypass channel (rb = reflector bypass) heat transfer and fluid dynamics scaling
+    #     Dh_rb_r = A_ref_r**0.5
+    #     Dh_rb_p = (df.loc['Reflector_Bypass','4'])
+    #     Dh_rb_m = Dh_rb_p*Dh_rb_r
 
-        ehAs_rb_r = rho_r*cpf_r*u_ref_FC_r*(Dh_rb_r**2)
-        ehAs_rb_p = df.loc['e_rb_p','0']*df.loc['h_rb_p','0']*np.pi*df.loc['Reflector_Bypass','4']*(df.loc['Reflector_Bypass','3']) #e=1,h=500
-        ehAs_rb_m = ehAs_rb_p*ehAs_rb_r
+    #     ehAs_rb_r = rho_r*cpf_r*u_ref_FC_r*(Dh_rb_r**2)
+    #     ehAs_rb_p = df.loc['e_rb_p','0']*df.loc['h_rb_p','0']*np.pi*df.loc['Reflector_Bypass','4']*(df.loc['Reflector_Bypass','3']) #e=1,h=500
+    #     ehAs_rb_m = ehAs_rb_p*ehAs_rb_r
 
-        St_FC_rb_p = (ehAs_rb_p*deltaT_sf_p/(rho_p*u_ref_FC_p*(np.pi/4)*(Dh_rb_p**2)*cp_p*deltaT_p))
-        St_FC_rb_r = 1.0 #assumed in scaling report by constraining (hAs_rx_r).
-        St_FC_rb_m = St_FC_rb_p*St_FC_rb_r
+    #     St_FC_rb_p = (ehAs_rb_p*deltaT_sf_p/(rho_p*u_ref_FC_p*(np.pi/4)*(Dh_rb_p**2)*cp_p*deltaT_p))
+    #     St_FC_rb_r = 1.0 #assumed in scaling report by constraining (hAs_rx_r).
+    #     St_FC_rb_m = St_FC_rb_p*St_FC_rb_r
 
-        Re_FC_rb_p = rho_p*u_ref_FC_p*Dh_rb_p/visc_p
-        Re_FC_rb_r = rho_r*u_ref_FC_r*Dh_rb_r/visc_r
-        Re_FC_rb_m = Re_FC_rb_p*Re_FC_rb_r
+    #     Re_FC_rb_p = rho_p*u_ref_FC_p*Dh_rb_p/visc_p
+    #     Re_FC_rb_r = rho_r*u_ref_FC_r*Dh_rb_r/visc_r
+    #     Re_FC_rb_m = Re_FC_rb_p*Re_FC_rb_r
+
+    ### steady state code block
 
     #NATURAL CIRCULATION phenomena, relevant to transient part of tests
 
