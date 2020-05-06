@@ -9,20 +9,29 @@ import numpy as np
 import csv
 
 #INPUT CARD
-df = pd.read_csv('krisp_input.csv') #dataframe for prototype inputs
-numColumns_df = len(df.columns)
-numRows_df = len(df)
+# df = pd.read_csv('krisp_input.csv') #dataframe for prototype inputs
+df_pump = pd.read_csv('pump_trip.csv') #pump trip output file
+df_dracs = pd.read_csv('DRACS_DHX_csv.csv') #dracs output file
 
-time_steps = df['time'].tolist() #making time-steps into a list
-time_steps_len = len(time_steps)
+numColumns_df_pump = len(df_pump.columns)
+numRows_df_pump = len(df_pump)
+
+numColumns_df_dracs = len(df_dracs.columns)
+numRows_df_dracs = len(df_dracs)
+
+time_steps_pump = df_pump['time'].tolist() #making time-steps into a list
+time_steps_pump_len = len(time_steps_pump)
+
+time_steps_dracs = df_dracs['time'].tolist() #making time-steps into a list
+time_steps_dracs_len = len(time_steps_dracs)
 
 #OUTPUT CARD
-dim_out = pd.DataFrame(0, index=range(numRows_df), columns=range(numColumns_df)) #create dataframe for model outputs
+dim_out = pd.DataFrame(0, index=range(numRows_df_pump), columns=range(numColumns_df_pump)) #create dataframe for model outputs
 #dim_out.columns=df.columns # give all of the columns the same name
 #dim_out.loc[0]=df.loc[0] # give it same row of acronyms
 #dim_out['row index']=df['row index'] #first column is the list of variables, same for both
 
-scale_out = pd.DataFrame(0, index=range(numColumns_dfum), columns=range(time_steps_len)) #create dataframe for scaling groups outputted, 16 ratios, 10 time stamps.
+scale_out = pd.DataFrame(0, index=range(numColumns_df_pump), columns=range(time_steps_pump_len)) #create dataframe for scaling groups outputted, 16 ratios, 10 time stamps.
 scale_out.columns = ['Scaling_Group'] + time_steps 
 numColumns_scale_out = len(scale_out.columns)
 numRows_scale_out = len(scale_out)
@@ -53,7 +62,7 @@ for i in range(0,31): #columns
 
 #Naming the rows for the output file.
 row = 0
-for i in time_steps:
+for i in time_steps_pump:
 	k = str(i)
 	var_out.loc[row, 'title column'] = k
 	val_out.loc[row, 'time'] = k
@@ -170,9 +179,9 @@ for i in range(0,1): #columns
 #------------------------------------------------------------------------------------------------
 # SS = 'SS' #krisp og code
 
+pr_vals = [[]]
 
-
-for t in time_steps: #over the transient, loop over time increments (over time stamp 9,0s,1s,10s,100s,1000s,1e4,1e5,6e5)
+for t in time_steps_dracs: #over the transient, loop over time increments (over time stamp 9,0s,1s,10s,100s,1000s,1e4,1e5,6e5)
     
 	### og code block
     # if t==1: #need this if statement section because function geomspace cannot start at 0
@@ -194,100 +203,151 @@ for t in time_steps: #over the transient, loop over time increments (over time s
     #DETERMINING CHARACTERISTIC RATIOS, AND MODEL-TO-PROTOTYPE RATIOS
     #1 // First step is matching Pr#
     # Pr_p = df.loc[t,'8'] / df.loc[t,'9'] # krisp Pr Number at time t #kinematic_viscosity * thermal_diffusivity of prototype
-    Pr_p = df.loc[t, ]
-    Pr_r = 1.0 #forcing this to match
-    Pr_m = Pr_p*Pr_r
+    # Pr_p = df.loc[t, ]
+    # Pr_r = 1.0 #forcing this to match
+    # Pr_m = Pr_p*Pr_r
 
     # for each time t, we have a Pr_m requirement from above. I used table in 'Salt and simulant fluids thermophysical properties.excel' to select a T_mean such that Pr# = 1.
     # see page 38 of scaling report.
     # T_m = df.loc[t,'33'] #in K #krisp T_mean
 
-    T_m  #temperature of flibe not from the input file
-    t = str(t) #need it to be a string again for using PANDAS dataframe functions like df.loc.
+    # T_m =  #temperature of flibe Dowtherm A found at the theory manual
+    # t = str(t) #need it to be a string again for using PANDAS dataframe functions like df.loc.
 
-    # MISC PROPERTIES
-    deltaP_FC_p = df.loc[t,'13'] #prototypical pump head
-    ks_rx_p = df.loc[t,'14'] #from IET_workbook for pebble average
-    ks_rx_m = ks_rx_p #for now, I assume we will match this using teflon blended with metal. Can improve power requirements by increasing ks_rx_m
-    ks_rx_r = ks_rx_m/ks_rx_p
-    rho_rx_p = df.loc[t,'15'] #material properties of fuel pebble
-    cp_rx_p = df.loc[t,'16'] #material properties of fuel pebble
-    ls_rx_p = df.loc['ls_rx_p','0'] #pebble diameter
-    g = df.loc['g','0'] #[m/s2] acceleration of gravity at earth's surface.
-    qsource_p = df.loc[t,'30'] #[W] follows decay heat curve.
-    deltaT_sf_p = df.loc[t,'10']
-    deltaP_p = df.loc[t,'13']
-    u_ref_FC_p = df.loc['SS','11'] # [m/s] reference velocity for FC from KP-SAM
-    u_ref_NC_p = df.loc[t,'11'] # reference velocity for NC from KP-SAM
-    u_ref_FC_hx_p = df.loc[t,'31'] #from KP-SAM data
-    u_ref_FC_hx_m = df.loc['u_ref_FC_hx_m','0'] #balance mass flow rate in model
-    u_ref_FC_hx_r = u_ref_FC_hx_m/u_ref_FC_hx_p
 
-    por_p = df.loc['por_p','0'] #not needed for now
-    ks_rf_p = df.loc['ks_rf_p','0'] #reflector thermal conductivity, ETU-10. Need to add temp dependence when it becomes known.
-    ks_rf_m = df.loc['ks_rf_m','0'] #can input this once it is known based on material selection.
-    ks_rf_r = ks_rf_m/ks_rf_p
-    ls_rf_p = df.loc['Outer_Reflector_Active','6'] #width of reflector next to active core.
-    ls_bl_p = df.loc['Barrel_Middle','6'] #width of core barrel.
-    h_rf_p = df.loc['h_rf_p','0'] #need convection from flibe to reflector from KP-SAM
-    ks_rv_p = df.loc[t,'22'] #vessel SS316 is the solid used
-    #ks_rv_m = 1.4
-    ks_rv_m = df.loc['ks_rv_m','0'] #W/mK,Pyrex @ 126C. Value from 'Thermal conductivity of pyrex glass: selected values', Carwile 1966.
-    ks_bl_m = df.loc['ks_bl_m','0'] #W/mK,Pyrex is assumed.
-    #ks_rv_m = 16.2 #W/mK,when SS is assumed.
-    rho_rx_m = df.loc['rho_rx_m','0'] #will come from material selection process
-    cp_rx_m = df.loc['cp_rx_m','0'] #will come from material selection process
+    #variables from pump_trip.csv
+    CTAH_Tin = df_pump.loc[t, '0']
+    CTAH_Tout = df_pump.loc[t, '1']
+    CTAH_Tout_s = df_pump.loc[t, '2']
+    CTAH_fric = df_pump.loc[t, '3']
+    Core_Tin = df_pump.loc[t, '4']
+    Core_Tout = df_pump.loc[t, '5']
+    Core_Tw = df_pump.loc[t, '6']
+    Core_fric = df_pump.loc[t, '7']
+    Core_rho_in = df_pump.loc[t, '8']
+    Core_rho_out = df_pump.loc[t, '9']
+    Core_u_in = df_pump.loc[t, '10']
+    Core_u_out = df_pump.loc[t, '11']
+    Core_u_avg = (Core_u_out+Core_u_in)/2
+    HeatExchangerHeatRemovalRate = df_pump.loc[t, '12']
+    pipe1_fric = df_pump.loc[t, '13']
+    pipe3_fric = df_pump.loc[t, '14']
+    pipe4_fric = df_pump.loc[t, '15']
+   	pipe5_fric = df_pump.loc[t, '16']
+   	pipe6_fric = df_pump.loc[t, '17']
+   	secondary_flow = df_pump.loc[t, '18']
+   	Branch2_pressure = df_pump.loc[t, '19']
+   	Branch2_rho = df_pump.loc[t, '20']
+   	Branch2_temp = df_pump.loc[t, '21']
+   	Branch2_velocity = df_pump.loc[t, '22']
+   	Pump_p_pressure = df_pump.loc[t, '23']
+   	Pump_p_pump_head = df_pump.loc[t, '24']
+   	Pump_p_rho = df_pump.loc[t, '25']
+   	Pump_p_temp = df_pump.loc[t, '26']
+   	Pump_p_velocity = df_pump.loc[t, '27']
 
-    ks_rv_r = ks_rv_m/ks_rv_p #assume we can match this.
+   	#DHX heater in/ heater out temp
+   	Heater_in_T = df_dracs.loc[t, '5']
+   	Heater_out_T = df_dracs.loc[t, '6']
 
-    # HEAT TRANFER OIL PROPERTIES [Downtherm A], dependent on fixed mean temperatures from above.
-    rho_m = df.loc[t,'25']
-    visc_m = df.loc[t,'26']
-    k_m = df.loc[t,'28']
-    cp_m = df.loc[t,'27']
-    beta_m = df.loc[t,'29']
-    kin_visc_m = df.loc[t,'26'] / df.loc[t,'25']
-    therm_diff_m = df.loc[t,'28']/(df.loc[t,'25']*df.loc[t,'27'])
+   	cp_in = 1518 + (2.82*Heater_in_T)
+   	miu_in = 0.13/(Heater_in_T**1.072)
+   	k_in = 0.142 - (0.00016*Heater_in_T)
 
-    #FLIBE PROPERTIES
-    rho_p = df.loc[t,'4']
-    visc_p = df.loc[t,'5']
-    k_p = df.loc[t,'6']
-    cp_p = df.loc[t,'7']
-    beta_p = df.loc[t,'12']
-    kin_visc_p = df.loc[t,'8']
-    therm_diff_p = df.loc[t,'9']
-    T_h_p = df.loc[t,'0']
-    T_c_p = df.loc[t,'1']
-    deltaT_p = df.loc[t,'3']
-    T_p = df.loc[t,'2']
-    beta_r = beta_m/beta_p
-    rho_r = rho_m/rho_p
-    cpf_r = cp_m/cp_p
-    visc_r = visc_m/visc_p
-    k_r = k_m/k_p
+   	pr_in = cp_in * miu_in / k_in
 
-    #2  // then we match thermal expansion of fluid (buoyancy) effects by scaling the deltaT to arrive at T_hot and T_cold temps across core.
-    deltaT_m = beta_p*(T_h_p-T_c_p)/beta_m
-    deltaT_r = deltaT_m/deltaT_p
-    T_h_m = T_m + 0.5*deltaT_m
-    T_c_m = T_m - 0.5*deltaT_m
-    T_h_r = T_h_m/T_h_p
-    T_c_r = T_c_m/T_c_p
-    deltaT_sf_r = deltaT_r
-    deltaT_sf_m = deltaT_sf_p*deltaT_sf_r
-    T_r = T_m/T_p #temp ratio based on average temps of flibe and oil
-    var_out.loc['t='+t,'deltaT_m'] = deltaT_m
-    var_out.loc['t='+t,'T_h_m'] = T_h_m
-    var_out.loc['t='+t,'T_c_m'] = T_c_m
-    var_out.loc['t='+t,'deltaT_sf_m'] = deltaT_sf_m
+   	cp_out = 1518 + (2.82*Heater_out_T)
+   	miu_out = 0.13/(Heater_out_T**1.072)
+   	k_out = 0.142 - (0.00016*Heater_out_T)
 
-    #3  // pebble length scaling can be done independently from facility-wide length scaling. But this is not used for ITF-0, which has no physical pebbles
-    l_peb_p = df.loc['l_peb_p','0'] # Pebble diameter.
-    l_peb_r = df.loc['l_peb_r','0']  # currently the same as the height ratio, although this can change to change Re# in pebble bed.
-    l_peb_m = l_peb_p*l_peb_r
+   	pr_out = cp_out * miu_out / k_out
 
-    
+
+
+    ### KRISP og code block for parameters
+    # # MISC PROPERTIES
+    # deltaP_FC_p = df.loc[t,'13'] #prototypical pump head
+    # ks_rx_p = df.loc[t,'14'] #from IET_workbook for pebble average
+    # ks_rx_m = ks_rx_p #for now, I assume we will match this using teflon blended with metal. Can improve power requirements by increasing ks_rx_m
+    # ks_rx_r = ks_rx_m/ks_rx_p
+    # rho_rx_p = df.loc[t,'15'] #material properties of fuel pebble
+    # cp_rx_p = df.loc[t,'16'] #material properties of fuel pebble
+    # ls_rx_p = df.loc['ls_rx_p','0'] #pebble diameter
+    # g = df.loc['g','0'] #[m/s2] acceleration of gravity at earth's surface.
+    # qsource_p = df.loc[t,'30'] #[W] follows decay heat curve.
+    # deltaT_sf_p = df.loc[t,'10']
+    # deltaP_p = df.loc[t,'13']
+    # u_ref_FC_p = df.loc['SS','11'] # [m/s] reference velocity for FC from KP-SAM
+    # u_ref_NC_p = df.loc[t,'11'] # reference velocity for NC from KP-SAM
+    # u_ref_FC_hx_p = df.loc[t,'31'] #from KP-SAM data
+    # u_ref_FC_hx_m = df.loc['u_ref_FC_hx_m','0'] #balance mass flow rate in model
+    # u_ref_FC_hx_r = u_ref_FC_hx_m/u_ref_FC_hx_p
+
+    # por_p = df.loc['por_p','0'] #not needed for now
+    # ks_rf_p = df.loc['ks_rf_p','0'] #reflector thermal conductivity, ETU-10. Need to add temp dependence when it becomes known.
+    # ks_rf_m = df.loc['ks_rf_m','0'] #can input this once it is known based on material selection.
+    # ks_rf_r = ks_rf_m/ks_rf_p
+    # ls_rf_p = df.loc['Outer_Reflector_Active','6'] #width of reflector next to active core.
+    # ls_bl_p = df.loc['Barrel_Middle','6'] #width of core barrel.
+    # h_rf_p = df.loc['h_rf_p','0'] #need convection from flibe to reflector from KP-SAM
+    # ks_rv_p = df.loc[t,'22'] #vessel SS316 is the solid used
+    # #ks_rv_m = 1.4
+    # ks_rv_m = df.loc['ks_rv_m','0'] #W/mK,Pyrex @ 126C. Value from 'Thermal conductivity of pyrex glass: selected values', Carwile 1966.
+    # ks_bl_m = df.loc['ks_bl_m','0'] #W/mK,Pyrex is assumed.
+    # #ks_rv_m = 16.2 #W/mK,when SS is assumed.
+    # rho_rx_m = df.loc['rho_rx_m','0'] #will come from material selection process
+    # cp_rx_m = df.loc['cp_rx_m','0'] #will come from material selection process
+
+    # ks_rv_r = ks_rv_m/ks_rv_p #assume we can match this.
+
+    # # HEAT TRANFER OIL PROPERTIES [Downtherm A], dependent on fixed mean temperatures from above.
+    # rho_m = df.loc[t,'25']
+    # visc_m = df.loc[t,'26']
+    # k_m = df.loc[t,'28']
+    # cp_m = df.loc[t,'27']
+    # beta_m = df.loc[t,'29']
+    # kin_visc_m = df.loc[t,'26'] / df.loc[t,'25']
+    # therm_diff_m = df.loc[t,'28']/(df.loc[t,'25']*df.loc[t,'27'])
+
+    # #FLIBE PROPERTIES
+    # rho_p = df.loc[t,'4']
+    # visc_p = df.loc[t,'5']
+    # k_p = df.loc[t,'6']
+    # cp_p = df.loc[t,'7']
+    # beta_p = df.loc[t,'12']
+    # kin_visc_p = df.loc[t,'8']
+    # therm_diff_p = df.loc[t,'9']
+    # T_h_p = df.loc[t,'0']
+    # T_c_p = df.loc[t,'1']
+    # deltaT_p = df.loc[t,'3']
+    # T_p = df.loc[t,'2']
+    # beta_r = beta_m/beta_p
+    # rho_r = rho_m/rho_p
+    # cpf_r = cp_m/cp_p
+    # visc_r = visc_m/visc_p
+    # k_r = k_m/k_p
+
+    # #2  // then we match thermal expansion of fluid (buoyancy) effects by scaling the deltaT to arrive at T_hot and T_cold temps across core.
+    # deltaT_m = beta_p*(T_h_p-T_c_p)/beta_m
+    # deltaT_r = deltaT_m/deltaT_p
+    # T_h_m = T_m + 0.5*deltaT_m
+    # T_c_m = T_m - 0.5*deltaT_m
+    # T_h_r = T_h_m/T_h_p
+    # T_c_r = T_c_m/T_c_p
+    # deltaT_sf_r = deltaT_r
+    # deltaT_sf_m = deltaT_sf_p*deltaT_sf_r
+    # T_r = T_m/T_p #temp ratio based on average temps of flibe and oil
+    # var_out.loc['t='+t,'deltaT_m'] = deltaT_m
+    # var_out.loc['t='+t,'T_h_m'] = T_h_m
+    # var_out.loc['t='+t,'T_c_m'] = T_c_m
+    # var_out.loc['t='+t,'deltaT_sf_m'] = deltaT_sf_m
+
+    # #3  // pebble length scaling can be done independently from facility-wide length scaling. But this is not used for ITF-0, which has no physical pebbles
+    # l_peb_p = df.loc['l_peb_p','0'] # Pebble diameter.
+    # l_peb_r = df.loc['l_peb_r','0']  # currently the same as the height ratio, although this can change to change Re# in pebble bed.
+    # l_peb_m = l_peb_p*l_peb_r
+    ### KRISP og code block
+
     ### steady state code block
     # if t=='SS': # this whole section is for normal operation (steady-state) only.
 
