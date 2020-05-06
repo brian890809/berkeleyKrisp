@@ -42,7 +42,7 @@ time_steps_dhx_len = int(time_steps_dhx_len)
 #OUTPUT CARD
 
 ## future : change add more parameters to var_out_param
-var_out_param = ['title column', 'time', 'pr_in','pr_out'] 
+var_out_param = ['title column', 'time', 'pr_in','pr_out', 'pr_avg'] 
 
 var_out = pd.DataFrame('-', index=list(range(time_steps_dhx_len-1)), columns=var_out_param) #create dataframe output variables
 var_out.columns = var_out_param
@@ -101,11 +101,13 @@ for t in list(range(time_steps_dhx_len-1)):
     k_out = np.subtract(0.142, np.multiply(0.00016, Heater_out_T))
     pr_out = np.multiply(cp_out, np.divide(miu_out, k_out))
 
+    pr_avg = np.divide(np.add(pr_in, pr_out), 2)
 #------------------------------------------------------------------------------------------------
 #OUTPUTS
     var_out.iloc[t, 0] = time_steps_dhx[1:][t]
     var_out.iloc[t, 1] = pr_in
     var_out.iloc[t, 2] = pr_out
+    var_out.iloc[t, 3] = pr_avg
     ### future : add change more var_out.iloc[t, "no. in int"] = parameter
 var_out.to_csv("pr_test_output.csv", sep=',',index=False) #change index=True to see indexing column in output card.
 print('Done.')
