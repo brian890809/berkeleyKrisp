@@ -91,6 +91,7 @@ for t in list(range(time_steps_dhx_len-1)):
     Heater_in_T = float(df_dhx.iloc[t+1, int('5')])
     Heater_out_T = float(df_dhx.iloc[t+1, int('6')])
 
+    #DowTherm A parameters
     cp_in = np.add(1518, np.multiply(2.82,Heater_in_T))
     miu_in = np.divide(0.13, np.power(Heater_in_T,1.072))
     k_in = np.subtract(0.142, np.multiply(0.00016, Heater_in_T))
