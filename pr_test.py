@@ -6,7 +6,9 @@
 import math as ma
 import pandas as pd
 import numpy as np
+import scipy.constants
 import csv
+from coolant_params import * #import coolant
 
 #INPUT CARD
 
@@ -42,7 +44,7 @@ time_steps_dhx_len = int(time_steps_dhx_len)
 #OUTPUT CARD
 
 ## future : change add more parameters to var_out_param
-var_out_param = ['title column', 'time', 'pr_in','pr_out', 'pr_avg'] 
+var_out_param = ['title column', 'time', 'pr_in','pr_out', 'pr_avg', 'richardson'] 
 
 var_out = pd.DataFrame('-', index=list(range(time_steps_dhx_len-1)), columns=var_out_param) #create dataframe output variables
 var_out.columns = var_out_param
@@ -83,34 +85,53 @@ var_out = var_out.set_index('title column')
 #  13. deriving power ratio for core
 #------------------------------------------------------------------------------------------------
 # SS = 'SS' #krisp og code
-
+gravity = scipy.constants.g
+l_ht = 1
+#constants:
 
 for t in list(range(time_steps_dhx_len-1)): 
+    
 
    	#DHX heater in/ heater out temp
-    Heater_in_T = float(df_dhx.iloc[t+1, int('5')])
-    Heater_out_T = float(df_dhx.iloc[t+1, int('6')])
+    Heater_in_T = np.subtract(float(df_dhx.iloc[t+1, int('5')]), 273.15)
+    Heater_out_T = np.subtract(float(df_dhx.iloc[t+1, int('6')]), 273.15)
+    Heater_avg_T = np.divide(np.add(Heater_in_T, Heater_out_T), 2)
 
-    #DowTherm A parameters
-    cp_in = np.add(1518, np.multiply(2.82,Heater_in_T))
-    miu_in = np.divide(0.13, np.power(Heater_in_T,1.072))
-    k_in = np.subtract(0.142, np.multiply(0.00016, Heater_in_T))
+    #DHX velocity in heater
+    v_ref = float(df_dhx.iloc[t+1, int('44')])
+
+    #DowTherm A parameters, change to flibe([T]) if needed, refer to coolant_params.py
+
+    cp_in = dowtherm_A(Heater_in_T).cp #np.add(1518, np.multiply(2.82,Heater_in_T))
+    miu_in = dowtherm_A(Heater_in_T).miu #np.divide(0.13, np.power(Heater_in_T,1.072))
+    k_in = dowtherm_A(Heater_in_T).k #np.subtract(0.142, np.multiply(0.00016, Heater_in_T))
+    rho_in = dowtherm_A(Heater_in_T).rho #np.subtract(1078, np.multiply(0.85, Heater_in_T))
+
+    cp_out =  dowtherm_A(Heater_out_T).cp #np.add(1518, np.multiply(2.82,Heater_out_T))
+    miu_out = dowtherm_A(Heater_out_T).miu #np.divide(0.13, np.power(Heater_out_T,1.072))
+    k_out = dowtherm_A(Heater_out_T).k  #np.subtract(0.142, np.multiply(0.00016, Heater_out_T))
+    rho_out = dowtherm_A(Heater_out_T).rho #np.subtract(1078, np.multiply(0.85, Heater_out_T))
+
+    rho_mid = np.subtract(1078, np.multiply(0.85, Heater_avg_T))
+    delta_rho = np.subtract(rho_out, rho_in)
+
+    #Pr number
     pr_in = np.multiply(cp_in, np.divide(miu_in, k_in))
-
-    cp_out = np.add(1518, np.multiply(2.82,Heater_out_T))
-    miu_out = np.divide(0.13, np.power(Heater_out_T,1.072))
-    k_out = np.subtract(0.142, np.multiply(0.00016, Heater_out_T))
     pr_out = np.multiply(cp_out, np.divide(miu_out, k_out))
-
     pr_avg = np.divide(np.add(pr_in, pr_out), 2)
+
+    #Richardson number
+    rh = np.negative(np.divide(np.multiply(gravity, np.multiply(delta_rho, l_ht)), np.multiply(rho_mid, np.power(v_ref, 2))))
+
 #------------------------------------------------------------------------------------------------
 #OUTPUTS
     var_out.iloc[t, 0] = time_steps_dhx[1:][t]
     var_out.iloc[t, 1] = pr_in
     var_out.iloc[t, 2] = pr_out
     var_out.iloc[t, 3] = pr_avg
+    var_out.iloc[t, 4] = rh
     ### future : add change more var_out.iloc[t, "no. in int"] = parameter
-var_out.to_csv("pr_test_output.csv", sep=',',index=False) #change index=True to see indexing column in output card.
+var_out.to_csv("test_output.csv", sep=',',index=False) #change index=True to see indexing column in output card.
 print('Done.')
 #------------------------------------------------------------------------------------------------
 #END
