@@ -15,6 +15,7 @@ class dowtherm_A():
 		self.miu = np.divide(0.13, np.power(T,1.072))
 		self.k = np.subtract(0.142, np.multiply(0.00016, T))
 		self.rho = np.subtract(1078, np.multiply(0.85, T))
+		self.nu = np.divide(self.miu, self.rho)
 
 #Flibe
 class flibe():
@@ -24,6 +25,7 @@ class flibe():
 		self.miu = np.divide(np.multiply(4.638, np.power(10, 5)), np.power(T, 2.79))
 		self.k = np.add(0.7662, np.multiply(0.0005, T))
 		self.rho = np.subtract(2279.92, np.multiply(0.488, T))
+		self.nu = np.divide(self.miu, rho)
 
 #FLiNaK
 class flinak():
